@@ -83,3 +83,41 @@ CREATE TABLE questions_closed_mv (
     qc_questID INTEGER  NOT NULL PRIMARY KEY,
     UNIQUE INDEX qID (qc_questID)
 );
+
+
+
+
+#query per vista risposte non wiki
+
+CREATE TABLE answers_last_30days_nowiki_mv (
+    nwa_postID INTEGER  NOT NULL PRIMARY KEY,
+    UNIQUE INDEX qID (nwa_postID)
+);
+
+
+INSERT INTO answers_last_30days_nowiki_mv
+select a.al2_postID as nwa_postID from answers_last_30days2_mv a inner join Posts p on a.al2_postID=p.id where p.communityowneddate is null;
+
+
+
+# userscommentanswers_mv
+# Vista materializzata: Contiene tutti i commenti che un utente di una risposta ha scritto alla sua risposta
+# la data di creazione di può creare anche di tipo date
+
+DROP TABLE userscommentsanswers_mv;
+CREATE TABLE  userscommentsanswers_mv (
+	ca_Id INTEGER NOT NULL PRIMARY KEY
+  ,	qa_Id INTEGER NOT NULL
+  ,	userId INTEGER NOT NULL
+  ,	c_text TEXT
+  ,	ca_ts_creationDate DATE NOT NULL   
+  ,	INDEX idx_c_Id (ca_Id)
+  ,	INDEX idx_q_Id (qa_Id)
+  ,	INDEX idx_userId (userId)
+  ,	INDEX idx_c_ts_creationDate (ca_ts_creationDate)
+  ,	INDEX idx_quest_dataVoto(qa_Id, ca_ts_creationDate)
+);
+
+INSERT INTO userscommentsanswers_mv
+SELECT Comments.Id as ca_Id, answers_mv.a_postID as a_Id, answers_mv.a_ownerID as userId, Comments.Text as c_text, date(Comments.CreationDate) as ca_ts_creationDate
+FROM answers_mv INNER JOIN Comments ON answers_mv.a_postId = Comments.PostId AND answers_mv.a_ownerId = Comments.UserId;
